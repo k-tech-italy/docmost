@@ -71,12 +71,20 @@ const groupedData: DataGroup[] = [
         isCloud: true,
         isAdmin: true,
       },
-      {
-        label: "Security & SSO",
+      // {
+      //   label: "Security & SSO",
+      //   icon: IconLock,
+      //   path: "/settings/security",
+      //   isCloud: false,
+      //   isEnterprise: false,
+      //   isAdmin: true,
+      // },
+            {
+        label: " SSO",
         icon: IconLock,
-        path: "/settings/security",
-        isCloud: true,
-        isEnterprise: true,
+        path: "/settings/security2",
+        isCloud: false,
+        isEnterprise: false,
         isAdmin: true,
       },
       { label: "Groups", icon: IconUsersGroup, path: "/settings/groups" },
@@ -106,6 +114,7 @@ export default function SettingsSidebar() {
   useEffect(() => {
     setActive(location.pathname);
   }, [location.pathname]);
+
 
   const canShowItem = (item: DataItem) => {
     if (item.isCloud && item.isEnterprise) {
@@ -142,6 +151,7 @@ export default function SettingsSidebar() {
         <Text c="dimmed" className={classes.linkHeader}>
           {t(group.heading)}
         </Text>
+
         {group.items.map((item) => {
           if (!canShowItem(item)) {
             return null;

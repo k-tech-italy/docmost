@@ -61,6 +61,11 @@ export function LoginForm() {
     return <Error404 />;
   }
 
+  async function loginWithOAuth() {
+    window.location.href = "/api/auth/oauth-redirect";
+  }
+
+
   return (
     <Container size={420} className={classes.container}>
       <Box p="xl" className={classes.containerBox}>
@@ -104,6 +109,13 @@ export function LoginForm() {
               <Button type="submit" fullWidth mt="md" loading={isLoading}>
                 {t("Sign In")}
               </Button>
+             <Button
+              onClick={loginWithOAuth}
+              fullWidth
+              mt="sm"
+            >
+              Login with SSO
+            </Button>
             </form>
           </>
         )}

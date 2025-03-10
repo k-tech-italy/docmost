@@ -254,6 +254,7 @@ export interface WorkspaceInvitations {
 }
 
 export interface Workspaces {
+  approvedDomains: Generated<string[] | null>;
   billingEmail: string | null;
   createdAt: Generated<Timestamp>;
   customDomain: string | null;
@@ -274,6 +275,15 @@ export interface Workspaces {
   stripeCustomerId: string | null;
   trialEndAt: Timestamp | null;
   updatedAt: Generated<Timestamp>;
+
+  // OIDC settings
+  oidcEnabled: boolean;
+  oidcClientId: string | null;
+  oidcClientSecret: string | null;
+  oidcIssuerUrl: string | null;
+  oidcJitEnabled: boolean;
+  oidcButtonName: string | null;
+
 }
 
 export interface DB {
