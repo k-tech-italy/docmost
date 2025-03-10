@@ -36,7 +36,7 @@ export default function Security() {
       </Title>
 
       {/*TODO: revisit when we add a second plan */}
-      {!isCloud() && hasLicenseKey ? (
+      {!isCloud() ? (
         <>
           <EnforceSso />
           <Divider my="lg" />
