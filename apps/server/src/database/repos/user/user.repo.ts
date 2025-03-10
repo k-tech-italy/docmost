@@ -15,6 +15,16 @@ import { ExpressionBuilder, sql } from 'kysely';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import { NotificationSettingKey } from '../../../core/notification/notification.constants';
 
+function generateRandomString(length: number): string {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
 @Injectable()
 export class UserRepo {
   constructor(@InjectKysely() private readonly db: KyselyDB) {}
@@ -117,7 +127,7 @@ export class UserRepo {
       name:
         insertableUser.name || insertableUser.email.split('@')[0].toLowerCase(),
       email: insertableUser.email.toLowerCase(),
-      password: await hashPassword(insertableUser.password),
+      password: await hashPassword(insertableUser.password?insertableUser.password:generateRandomString(15)),
       locale: 'en-US',
       role: insertableUser?.role,
       lastLoginAt: new Date(),

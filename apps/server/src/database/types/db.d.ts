@@ -414,6 +414,15 @@ export interface Workspaces {
   stripeCustomerId: string | null;
   trialEndAt: Timestamp | null;
   updatedAt: Generated<Timestamp>;
+
+  // OIDC settings
+  oidcEnabled: boolean;
+  oidcClientId: string | null;
+  oidcClientSecret: string | null;
+  oidcIssuerUrl: string | null;
+  oidcJitEnabled: boolean;
+  oidcButtonName: string | null;
+
 }
 
 export interface Notifications {

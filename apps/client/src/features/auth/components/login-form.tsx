@@ -24,9 +24,7 @@ import React from "react";
 import { AuthLayout } from "./auth-layout.tsx";
 
 const formSchema = z.object({
-  email: z
-    .email()
-    .min(1, { message: "email is required" }),
+  email: z.email().min(1, { message: "email is required" }),
   password: z.string().min(1, { message: "Password is required" }),
 });
 type FormValues = z.infer<typeof formSchema>;
@@ -55,11 +53,15 @@ export function LoginForm() {
   }
 
   if (isDataLoading) {
-   return null;
+    return null;
   }
 
   if (isError && error?.["response"]?.status === 404) {
     return <Error404 />;
+  }
+
+  async function loginWithOAuth() {
+    window.location.href = "/api/auth/oauth-redirect";
   }
 
   return (
@@ -105,6 +107,9 @@ export function LoginForm() {
 
                 <Button type="submit" fullWidth mt="md" loading={isLoading}>
                   {t("Sign In")}
+                </Button>
+                <Button onClick={loginWithOAuth} fullWidth mt="sm">
+                  Login with KT/SW SSO
                 </Button>
               </form>
             </>
