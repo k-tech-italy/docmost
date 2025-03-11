@@ -25,7 +25,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { PasswordResetDto } from './dto/password-reset.dto';
 import { VerifyUserTokenDto } from './dto/verify-user-token.dto';
-import { FastifyReply } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { addDays } from 'date-fns';
 import { validateSsoEnforcement } from './auth.util';
 import { Issuer } from 'openid-client';
@@ -40,6 +40,16 @@ export class AuthController {
     private authService: AuthService,
     private environmentService: EnvironmentService,
   ) {}
+
+  @Get('cb')
+  @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
+  async callback(@Req() req: FastifyRequest, @Res() reply: FastifyReply) {
+    const token = await this.authService.oidcLogin(req);
+
+    this.setAuthCookie(reply, token);
+
+    return reply.redirect(`${this.environmentService.getAppUrl()}/home`);
+  }
 
   @Get('oauth-redirect')
   @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
@@ -69,7 +79,6 @@ export class AuthController {
 
     return reply.redirect(authRedirect);
   }
-
 
   @Get('oidc-public-config')
   @HttpCode(HttpStatus.OK)
@@ -119,7 +128,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   async getApprovedDomains(@AuthWorkspace() workspace: Workspace) {
-    return { domains: workspace.approvedDomains };
+    return { domains: workspace.emailDomains };
   }
 
   @Patch('approved-domains')
@@ -238,4 +247,5 @@ export class AuthController {
       secure: this.environmentService.isHttps(),
     });
   }
+
 }

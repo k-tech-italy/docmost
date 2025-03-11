@@ -254,7 +254,7 @@ export interface WorkspaceInvitations {
 }
 
 export interface Workspaces {
-  approvedDomains: Generated<string[] | null>;
+  // approvedDomains: Generated<string[] | null>;
   billingEmail: string | null;
   createdAt: Generated<Timestamp>;
   customDomain: string | null;

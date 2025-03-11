@@ -1,3 +1,4 @@
+~storage
 .env
 .env.dev
 .env.prod

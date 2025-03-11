@@ -11,9 +11,9 @@ export async function up(db: Kysely<any>): Promise<void> {
         ADD COLUMN oidc_button_name TEXT;
     `.execute(db);
 
-  await sql`ALTER TABLE workspaces RENAME COLUMN email_domains TO approved_domains`.execute(
-    db,
-  );
+  // await sql`ALTER TABLE workspaces RENAME COLUMN email_domains TO approved_domains`.execute(
+  //   db,
+  // );
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
@@ -27,7 +27,7 @@ export async function down(db: Kysely<any>): Promise<void> {
         DROP COLUMN oidc_button_name
     `.execute(db);
 
-  await sql`ALTER TABLE workspaces RENAME COLUMN approved_domains TO email_domains`.execute(
-    db,
-  );
+  // await sql`ALTER TABLE workspaces RENAME COLUMN approved_domains TO email_domains`.execute(
+  //   db,
+  // );
 }

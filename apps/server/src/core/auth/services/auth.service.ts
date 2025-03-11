@@ -63,7 +63,7 @@ export class AuthService {
   ): Promise<string[]> {
     await this.workspaceRepo.updateWorkspace(
       {
-        approvedDomains: domains,
+        emailDomains: domains,
       },
       workspaceId,
     );
@@ -167,8 +167,8 @@ export class AuthService {
 
     if (!user) {
       if (
-        workspace.oidcJitEnabled &&
-        workspace.approvedDomains.includes(email.split('@')[1])
+        // workspace.oidcJitEnabled &&
+        workspace.emailDomains.includes(email.split('@')[1])
       ) {
         const user = await this.userRepo.insertUser({
           name,

@@ -32,6 +32,10 @@ export class WorkspaceRepo {
     'trialEndAt',
     'enforceSso',
     'plan',
+    'oidcIssuerUrl',
+    'oidcClientId',
+    'oidcClientSecret',
+    'oidcJitEnabled'
   ];
   constructor(@InjectKysely() private readonly db: KyselyDB) {}
 
