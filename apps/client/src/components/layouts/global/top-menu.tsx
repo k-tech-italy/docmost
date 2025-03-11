@@ -19,6 +19,7 @@ export default function TopMenu() {
   const { t } = useTranslation();
   const [currentUser] = useAtom(currentUserAtom);
   const { logout } = useAuth();
+  const { logoutSso } = useAuth();
 
   const user = currentUser?.user;
   const workspace = currentUser?.workspace;
@@ -105,6 +106,9 @@ export default function TopMenu() {
 
         <Menu.Item onClick={logout} leftSection={<IconLogout size={16} />}>
           {t("Logout")}
+        </Menu.Item>
+        <Menu.Item onClick={logoutSso} leftSection={<IconLogout size={16} />}>
+          SSO Logout
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

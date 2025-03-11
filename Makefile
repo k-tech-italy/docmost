@@ -9,6 +9,7 @@ NPM_INSTALLED := $(shell . ${HOME}/.nvm/nvm.sh && nvm ls | grep -E "\->\s+v${NPM
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 HASH := $(shell git rev-parse HEAD)
 VERSION := `grep version package.json | cut -d '"' -f 4`
+DOCKER_REGISTRY?=docker.k-tech.it
 
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
@@ -57,7 +58,7 @@ build:  ## Build
 	pnpm build
 
 docker:
-	docker build -t docker.k-tech.it/docmost-kt:${VERSION}-${BRANCH} -t docker.k-tech.it/docmost-kt:latest .
+	docker build -t ${DOCKER_REGISTRY}/kt/docmost:${VERSION} -t ${DOCKER_REGISTRY}/kt/docmost:latest .
 
 run:
 	docker run --rm \
@@ -74,7 +75,7 @@ run:
       	--name docmost-temp \
 		-p "9999:3000" \
 		-v "./~storage:/app/data/storage" \
-		docker.k-tech.it/docmost-kt:latest
+		${DOCKER_REGISTRY}/kt/docmost:latest
 
 exec:
 	docker exec -it docmost-temp /bin/bash
@@ -94,5 +95,17 @@ docker-migrate:
 #      	--add-host ${DOCKER_SSO_HOST} \
 #		-p "9999:3000" \
 #		-v "./~storage:/app/data/storage" \
-#		docker.k-tech.it/docmost-kt:latest \
+#		${DOCKER_REGISTRY}/kt/docmost:latest \
 #		bash -c "cd /app/apps/server && pnpm install tsx && pnpm run migration:latest"
+
+
+registrylogin:  ## Log in to docker
+	@echo ${DOCKER_PWD} | echo docker login ${DOCKER_REGISTRY} -u ${DOCKER_USR} --password-stdin ; \
+
+release:  ## For now manual release until we fix nexus
+#	@scp -o ProxyJump=kjump ../dist/image-${CONTAINER_NAME}-${VERSION}.tgz khetz:/tmp
+#	@echo "Now you can run on  the server:"
+#	@echo "  docker load -i /tmp/image-${CONTAINER_NAME}-${VERSION}.tgz && rm /tmp/image-${CONTAINER_NAME}-${VERSION}.tgz"
+	@echo "${DOCKER_PWD}" | docker login ${DOCKER_REGISTRY} -u ${DOCKER_USR} --password-stdin
+	@docker push ${DOCKER_REGISTRY}/kt/docmost:latest
+	@docker push ${DOCKER_REGISTRY}/kt/docmost:${VERSION}
