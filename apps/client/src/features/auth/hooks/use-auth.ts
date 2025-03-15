@@ -9,7 +9,7 @@ import {
 } from "@/features/auth/services/auth-service";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
-import { currentUserAtom } from "@/features/user/atoms/current-user-atom";
+import { currentUserAtom, workspaceAtom } from '@/features/user/atoms/current-user-atom';
 import {
   IForgotPassword,
   ILogin,
@@ -34,6 +34,7 @@ export default function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [, setCurrentUser] = useAtom(currentUserAtom);
+
 
   const handleSignIn = async (data: ILogin) => {
     setIsLoading(true);
@@ -125,7 +126,7 @@ export default function useAuth() {
   const handleLogoutSso = async () => {
     setCurrentUser(RESET);
     await logout();
-    window.location.replace('https://keycloack.singlewave.co.uk/realms/ktsw/protocol/openid-connect/logout');
+    window.location.replace('https://keycloak.singlewave.co.uk/realms/ktsw/protocol/openid-connect/logout');
   };
 
   const handleForgotPassword = async (data: IForgotPassword) => {
