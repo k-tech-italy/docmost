@@ -1,0 +1,1066 @@
+Subject: [PATCH] Added SSO Logout
+---
+Index: apps/client/src/App.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/App.tsx b/apps/client/src/App.tsx
+--- a/apps/client/src/App.tsx	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/client/src/App.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -26,6 +26,7 @@
+ import Security from "@/ee/security/pages/security.tsx";
+ import License from "@/ee/licence/pages/license.tsx";
+ import { useRedirectToCloudSelect } from "@/ee/hooks/use-redirect-to-cloud-select.tsx";
++import WorkspaceSecuritySettings from "@/pages/settings/workspace/workspace-security";
+ 
+ export default function App() {
+   const { t } = useTranslation();
+@@ -78,6 +79,7 @@
+             <Route path={"groups"} element={<Groups />} />
+             <Route path={"groups/:groupId"} element={<GroupInfo />} />
+             <Route path={"spaces"} element={<Spaces />} />
++            <Route path={"security2"} element={<WorkspaceSecuritySettings />} />
+             <Route path={"security"} element={<Security />} />
+             {!isCloud() && <Route path={"license"} element={<License />} />}
+             {isCloud() && <Route path={"billing"} element={<Billing />} />}
+Index: apps/client/src/components/layouts/global/top-menu.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/components/layouts/global/top-menu.tsx b/apps/client/src/components/layouts/global/top-menu.tsx
+--- a/apps/client/src/components/layouts/global/top-menu.tsx	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/client/src/components/layouts/global/top-menu.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -19,6 +19,7 @@
+   const { t } = useTranslation();
+   const [currentUser] = useAtom(currentUserAtom);
+   const { logout } = useAuth();
++  const { logoutSso } = useAuth();
+ 
+   const user = currentUser?.user;
+   const workspace = currentUser?.workspace;
+@@ -105,6 +106,9 @@
+ 
+         <Menu.Item onClick={logout} leftSection={<IconLogout size={16} />}>
+           {t("Logout")}
++        </Menu.Item>
++        <Menu.Item onClick={logoutSso} leftSection={<IconLogout size={16} />}>
++          SSO Logout
+         </Menu.Item>
+       </Menu.Dropdown>
+     </Menu>
+Index: apps/client/src/components/settings/settings-sidebar.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/components/settings/settings-sidebar.tsx b/apps/client/src/components/settings/settings-sidebar.tsx
+--- a/apps/client/src/components/settings/settings-sidebar.tsx	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/client/src/components/settings/settings-sidebar.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -71,12 +71,20 @@
+         isCloud: true,
+         isAdmin: true,
+       },
+-      {
+-        label: "Security & SSO",
++      // {
++      //   label: "Security & SSO",
++      //   icon: IconLock,
++      //   path: "/settings/security",
++      //   isCloud: false,
++      //   isEnterprise: false,
++      //   isAdmin: true,
++      // },
++            {
++        label: " SSO",
+         icon: IconLock,
+-        path: "/settings/security",
+-        isCloud: true,
+-        isEnterprise: true,
++        path: "/settings/security2",
++        isCloud: false,
++        isEnterprise: false,
+         isAdmin: true,
+       },
+       { label: "Groups", icon: IconUsersGroup, path: "/settings/groups" },
+@@ -107,6 +115,7 @@
+     setActive(location.pathname);
+   }, [location.pathname]);
+ 
++
+   const canShowItem = (item: DataItem) => {
+     if (item.isCloud && item.isEnterprise) {
+       if (!(isCloud() || workspace?.hasLicenseKey)) return false;
+@@ -142,6 +151,7 @@
+         <Text c="dimmed" className={classes.linkHeader}>
+           {t(group.heading)}
+         </Text>
++
+         {group.items.map((item) => {
+           if (!canShowItem(item)) {
+             return null;
+Index: apps/client/src/ee/security/pages/security.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/ee/security/pages/security.tsx b/apps/client/src/ee/security/pages/security.tsx
+--- a/apps/client/src/ee/security/pages/security.tsx	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/client/src/ee/security/pages/security.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -36,7 +36,7 @@
+       </Title>
+ 
+       {/*TODO: revisit when we add a second plan */}
+-      {!isCloud() && hasLicenseKey ? (
++      {!isCloud() ? (
+         <>
+           <EnforceSso />
+           <Divider my="lg" />
+Index: apps/client/src/features/auth/components/login-form.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/features/auth/components/login-form.tsx b/apps/client/src/features/auth/components/login-form.tsx
+--- a/apps/client/src/features/auth/components/login-form.tsx	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/client/src/features/auth/components/login-form.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -61,6 +61,11 @@
+     return <Error404 />;
+   }
+ 
++  async function loginWithOAuth() {
++    window.location.href = "/api/auth/oauth-redirect";
++  }
++
++
+   return (
+     <Container size={420} className={classes.container}>
+       <Box p="xl" className={classes.containerBox}>
+@@ -104,6 +109,13 @@
+               <Button type="submit" fullWidth mt="md" loading={isLoading}>
+                 {t("Sign In")}
+               </Button>
++             <Button
++              onClick={loginWithOAuth}
++              fullWidth
++              mt="sm"
++            >
++              Login with SSO
++            </Button>
+             </form>
+           </>
+         )}
+Index: apps/client/src/features/auth/hooks/use-auth.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/features/auth/hooks/use-auth.ts b/apps/client/src/features/auth/hooks/use-auth.ts
+--- a/apps/client/src/features/auth/hooks/use-auth.ts	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/client/src/features/auth/hooks/use-auth.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -9,7 +9,7 @@
+ } from "@/features/auth/services/auth-service";
+ import { useNavigate } from "react-router-dom";
+ import { useAtom } from "jotai";
+-import { currentUserAtom } from "@/features/user/atoms/current-user-atom";
++import { currentUserAtom, workspaceAtom } from '@/features/user/atoms/current-user-atom';
+ import {
+   IForgotPassword,
+   ILogin,
+@@ -35,6 +35,7 @@
+   const navigate = useNavigate();
+   const [, setCurrentUser] = useAtom(currentUserAtom);
+ 
++
+   const handleSignIn = async (data: ILogin) => {
+     setIsLoading(true);
+ 
+@@ -117,10 +118,17 @@
+ 
+   const handleLogout = async () => {
+     setCurrentUser(RESET);
++    // currentWorkspace
+     await logout();
+     window.location.replace(APP_ROUTE.AUTH.LOGIN);
+   };
+ 
++  const handleLogoutSso = async () => {
++    setCurrentUser(RESET);
++    await logout();
++    window.location.replace('https://keycloak.singlewave.co.uk/realms/ktsw/protocol/openid-connect/logout');
++  };
++
+   const handleForgotPassword = async (data: IForgotPassword) => {
+     setIsLoading(true);
+ 
+@@ -165,6 +173,7 @@
+     passwordReset: handlePasswordReset,
+     verifyUserToken: handleVerifyUserToken,
+     logout: handleLogout,
++    logoutSso: handleLogoutSso,
+     isLoading,
+   };
+ }
+Index: apps/client/src/features/workspace/components/settings/components/workspace-security-form.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/features/workspace/components/settings/components/workspace-security-form.tsx b/apps/client/src/features/workspace/components/settings/components/workspace-security-form.tsx
+new file mode 100644
+--- /dev/null	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
++++ b/apps/client/src/features/workspace/components/settings/components/workspace-security-form.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -0,0 +1,258 @@
++import api from "@/lib/api-client";
++import {
++  Button,
++  Switch,
++  TextInput,
++  PasswordInput,
++  Text,
++  Divider,
++  Group,
++  TagsInput,
++  Checkbox,
++} from "@mantine/core";
++import { useEffect, useRef, useState } from "react";
++import { isEqual } from "lodash";
++import { notifications } from "@mantine/notifications";
++
++interface OIDCConfig {
++  enabled: boolean;
++  issuerUrl: string;
++  clientId: string;
++  clientSecret: string;
++  buttonName: string;
++  jitEnabled: boolean;
++}
++
++export default function WorkspaceSecurityForm() {
++  const [config, setConfig] = useState<OIDCConfig>({
++    enabled: false,
++    issuerUrl: "",
++    clientId: "",
++    clientSecret: "",
++    buttonName: "",
++    jitEnabled: false,
++  });
++
++  const initialConfig = useRef<OIDCConfig>({
++    enabled: false,
++    issuerUrl: "",
++    clientId: "",
++    clientSecret: "",
++    buttonName: "",
++    jitEnabled: false,
++  });
++
++  const [editingDomains, setEditingDomains] = useState(false);
++  const initialDomains = useRef<string[]>([]);
++  const [domains, setDomains] = useState<string[]>([]);
++  const [hasDomainsChanged, setHasDomainsChanged] = useState(false);
++
++  const [hasChanges, setHasChanges] = useState(false);
++
++  useEffect(() => {
++    if (!isEqual(domains, initialDomains.current)) {
++      setHasDomainsChanged(true);
++    } else {
++      setHasDomainsChanged(false);
++    }
++  }, [domains]);
++
++  useEffect(() => {
++    if (!isEqual(config, initialConfig.current)) {
++      setHasChanges(true);
++    } else {
++      setHasChanges(false);
++    }
++  }, [config]);
++
++  useEffect(() => {
++    async function fetchConfig() {
++      const [configResponse, domainResponse] = await Promise.all([
++        api.get<OIDCConfig>("/auth/oidc-config"),
++        api.get<{ domains: string[] }>("/auth/approved-domains"),
++      ]);
++
++      initialConfig.current = { ...configResponse.data, clientSecret: "" };
++      setConfig({ ...config, ...configResponse.data });
++
++      initialDomains.current = domainResponse.data.domains;
++      setDomains(domainResponse.data.domains);
++    }
++
++    fetchConfig();
++  }, []);
++
++  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
++    const { id, value } = event.target;
++
++    if (id === "enabled") {
++      setConfig((prev) => ({
++        ...prev,
++        enabled: event.target.checked,
++      }));
++      return;
++    }
++
++    if (id === "jitEnabled") {
++      setConfig((prev) => ({
++        ...prev,
++        jitEnabled: event.target.checked,
++      }));
++      return;
++    }
++
++    setConfig((prev) => ({
++      ...prev,
++      [id]: value,
++    }));
++  }
++
++  async function handleDomainsButton() {
++    if (editingDomains && hasDomainsChanged) {
++      try {
++        await api.patch("/auth/approved-domains", { domains });
++        initialDomains.current = domains;
++        setHasDomainsChanged(false);
++        setEditingDomains(false);
++        notifications.show({
++          message: "Domains updated successfully",
++        });
++      } catch {
++        notifications.show({
++          message: "Failed updating domains",
++          color: "red",
++        });
++      }
++      setEditingDomains(false);
++    } else {
++      setEditingDomains(!editingDomains);
++    }
++  }
++
++  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
++    event.preventDefault();
++
++    const updatedFields: Partial<OIDCConfig> = {};
++
++    Object.keys(config).forEach((key) => {
++      if (config[key] !== initialConfig.current[key]) {
++        updatedFields[key] = config[key];
++      }
++    });
++
++    try {
++      const { data } = await api.patch<OIDCConfig>(
++        "/auth/oidc-config",
++        updatedFields,
++      );
++
++      initialConfig.current = { ...config, clientSecret: "" };
++      setHasChanges(false);
++      setConfig({ ...data, clientSecret: "" });
++
++      notifications.show({
++        message: "Configuration updated successfully",
++      });
++    } catch {
++      notifications.show({
++        message: "Failed updating configuration",
++        color: "red",
++      });
++    }
++  }
++
++  return (
++    <>
++      <div>
++        <Text size="md">Approved Domains</Text>
++        <Text size="sm" c="dimmed">
++          If configured, only users with email addresses from these domains will
++          be able to sign in.
++        </Text>
++      </div>
++      <Group justify="space-between" wrap="nowrap" gap="xl" mt="md">
++        <TagsInput
++          variant="filled"
++          value={domains}
++          onChange={setDomains}
++          disabled={!editingDomains}
++        />
++
++        <Button onClick={handleDomainsButton}>
++          {editingDomains ? "Save" : "Edit"}
++        </Button>
++      </Group>
++
++      <Divider my="md" />
++      <Group justify="space-between" wrap="nowrap" gap="xl">
++        <div>
++          <Text size="md">SSO</Text>
++          <Text size="sm" c="dimmed">
++            Configure single sign-on settings.
++          </Text>
++        </div>
++
++        <Switch
++          id="enabled"
++          label="Enabled"
++          checked={config.enabled}
++          onChange={handleInputChange}
++          mt="md"
++        />
++      </Group>
++      <form onSubmit={handleSubmit}>
++        <TextInput
++          id="issuerUrl"
++          label="Issuer URL"
++          variant="filled"
++          mt="sm"
++          disabled={!config.enabled}
++          value={config.issuerUrl}
++          onChange={handleInputChange}
++        />
++
++        <TextInput
++          id="clientId"
++          label="Client ID"
++          variant="filled"
++          mt="sm"
++          disabled={!config.enabled}
++          value={config.clientId}
++          onChange={handleInputChange}
++        />
++
++        <PasswordInput
++          id="clientSecret"
++          label="Client Secret"
++          variant="filled"
++          mt="sm"
++          disabled={!config.enabled}
++          onChange={handleInputChange}
++        />
++
++        <TextInput
++          id="buttonName"
++          label="Button Name"
++          variant="filled"
++          mt="sm"
++          disabled={!config.enabled}
++          value={config.buttonName}
++          onChange={handleInputChange}
++        />
++
++        <Switch
++          id="jitEnabled"
++          mt="md"
++          label="Automatically create users from approved domains (JIT)"
++          disabled={!config.enabled}
++          checked={config.jitEnabled}
++          onChange={handleInputChange}
++        />
++
++        <Button mt="md" type="submit" disabled={!hasChanges}>
++          Save
++        </Button>
++      </form>
++    </>
++  );
++}
+Index: apps/client/src/pages/settings/workspace/workspace-security.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/client/src/pages/settings/workspace/workspace-security.tsx b/apps/client/src/pages/settings/workspace/workspace-security.tsx
+new file mode 100644
+--- /dev/null	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
++++ b/apps/client/src/pages/settings/workspace/workspace-security.tsx	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -0,0 +1,11 @@
++import SettingsTitle from "../../../components/settings/settings-title"
++import WorkspaceSecurityForm from "@/features/workspace/components/settings/components/workspace-security-form"
++
++export default function WorkspaceSecuritySettings() {
++  return (
++    <>
++      <SettingsTitle title="Security" />
++      <WorkspaceSecurityForm />
++    </>
++  );
++}
+Index: apps/server/package.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/package.json b/apps/server/package.json
+--- a/apps/server/package.json	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/server/package.json	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -51,6 +51,7 @@
+     "@node-saml/passport-saml": "^5.0.0",
+     "@react-email/components": "0.0.28",
+     "@react-email/render": "1.0.2",
++    "@sentry/node": "5.5.0",
+     "@socket.io/redis-adapter": "^8.3.0",
+     "bcrypt": "^5.1.1",
+     "bullmq": "^5.41.3",
+@@ -80,7 +81,8 @@
+     "sanitize-filename-ts": "^1.0.2",
+     "socket.io": "^4.8.1",
+     "stripe": "^17.5.0",
+-    "ws": "^8.18.0"
++    "ws": "^8.18.0",
++    "zod": "^3.23.8"
+   },
+   "devDependencies": {
+     "@eslint/js": "^9.20.0",
+Index: apps/server/src/core/auth/auth.controller.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/core/auth/auth.controller.ts b/apps/server/src/core/auth/auth.controller.ts
+--- a/apps/server/src/core/auth/auth.controller.ts	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/server/src/core/auth/auth.controller.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -2,11 +2,14 @@
+   BadRequestException,
+   Body,
+   Controller,
++  Get,
+   HttpCode,
+   HttpStatus,
++  Patch,
+   Post,
+   Req,
+   Res,
++  UnauthorizedException,
+   UseGuards,
+ } from '@nestjs/common';
+ import { LoginDto } from './dto/login.dto';
+@@ -22,9 +25,14 @@
+ import { ForgotPasswordDto } from './dto/forgot-password.dto';
+ import { PasswordResetDto } from './dto/password-reset.dto';
+ import { VerifyUserTokenDto } from './dto/verify-user-token.dto';
+-import { FastifyReply } from 'fastify';
++import { FastifyReply, FastifyRequest } from 'fastify';
+ import { addDays } from 'date-fns';
+ import { validateSsoEnforcement } from './auth.util';
++import { Issuer } from 'openid-client';
++import { UpdateOidcConfigDto } from './dto/update-oidc.dto';
++import { OidcConfigDto } from './dto/oidc-config.dto';
++import { UpdateDomainsDto } from './dto/update-domains.dto';
++import { UserRole } from '../../common/helpers/types/permission';
+ 
+ @Controller('auth')
+ export class AuthController {
+@@ -33,6 +41,116 @@
+     private environmentService: EnvironmentService,
+   ) {}
+ 
++  @Get('cb')
++  @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
++  async callback(@Req() req: FastifyRequest, @Res() reply: FastifyReply) {
++    const token = await this.authService.oidcLogin(req);
++
++    this.setAuthCookie(reply, token);
++
++    return reply.redirect(`${this.environmentService.getAppUrl()}/home`);
++  }
++
++  @Get('oauth-redirect')
++  @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
++  async oauthRedirect(
++    @AuthWorkspace() workspace: Workspace,
++    @Res() reply: FastifyReply,
++  ) {
++    const redirectUri = `${this.environmentService.getAppUrl()}/api/auth/cb`;
++
++    if (!workspace.oidcIssuerUrl) {
++      return reply.redirect(`${this.environmentService.getAppUrl()}/login`);
++    }
++
++    const issuer = await Issuer.discover(workspace.oidcIssuerUrl);
++
++    if (!issuer.metadata.authorization_endpoint || !workspace.oidcClientId) {
++      return reply.redirect(`${this.environmentService.getAppUrl()}/login`);
++    }
++
++    const authRedirect =
++      `${issuer.metadata.authorization_endpoint}` +
++      `?response_type=code` +
++      `&client_id=${workspace.oidcClientId}` +
++      `&redirect_uri=${redirectUri}` +
++      `&scope=openid profile email` +
++      `&state=${workspace.id}`;
++
++    return reply.redirect(authRedirect);
++  }
++
++  @Get('oidc-public-config')
++  @HttpCode(HttpStatus.OK)
++  async oidcPublicConfig(@AuthWorkspace() workspace: Workspace) {
++    return {
++      enabled: workspace.oidcEnabled,
++      buttonName: workspace.oidcButtonName,
++    };
++  }
++
++  @Get('oidc-config')
++  @HttpCode(HttpStatus.OK)
++  @UseGuards(JwtAuthGuard)
++  async oauthConfig(
++    @AuthUser() user: User,
++    @AuthWorkspace() workspace: Workspace,
++  ): Promise<OidcConfigDto> {
++    if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER) {
++      throw new UnauthorizedException();
++    }
++
++    return {
++      enabled: workspace.oidcEnabled,
++      issuerUrl: workspace.oidcIssuerUrl,
++      clientId: workspace.oidcClientId,
++      buttonName: workspace.oidcButtonName,
++      jitEnabled: workspace.oidcJitEnabled,
++    };
++  }
++
++  @Patch('oidc-config')
++  @HttpCode(HttpStatus.OK)
++  @UseGuards(JwtAuthGuard)
++  async updateOidcConfig(
++    @AuthUser() user: User,
++    @AuthWorkspace() workspace: Workspace,
++    @Body() dto: UpdateOidcConfigDto,
++  ): Promise<OidcConfigDto> {
++    if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER) {
++      throw new UnauthorizedException();
++    }
++
++    return this.authService.updateOidcConfig(dto, workspace.id);
++  }
++
++  @Get('approved-domains')
++  @HttpCode(HttpStatus.OK)
++  @UseGuards(JwtAuthGuard)
++  async getApprovedDomains(@AuthWorkspace() workspace: Workspace) {
++    return { domains: workspace.emailDomains };
++  }
++
++  @Patch('approved-domains')
++  @HttpCode(HttpStatus.OK)
++  @UseGuards(JwtAuthGuard)
++  async updateApprovedDomains(
++    @AuthUser() user: User,
++    @AuthWorkspace() workspace: Workspace,
++    @Body() dto: UpdateDomainsDto,
++  ) {
++    if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER) {
++      throw new UnauthorizedException();
++    }
++
++    const domains = await this.authService.updateApprovedDomains(
++      dto.domains,
++      workspace.id,
++    );
++
++    return { domains };
++  }
++
+   @HttpCode(HttpStatus.OK)
+   @Post('login')
+   async login(
+@@ -129,4 +247,5 @@
+       secure: this.environmentService.isHttps(),
+     });
+   }
++
+ }
+Index: apps/server/src/core/auth/dto/oidc-config.dto.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/core/auth/dto/oidc-config.dto.ts b/apps/server/src/core/auth/dto/oidc-config.dto.ts
+new file mode 100644
+--- /dev/null	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
++++ b/apps/server/src/core/auth/dto/oidc-config.dto.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -0,0 +1,18 @@
++import { IsBoolean, IsOptional, isString, IsString } from 'class-validator';
++
++export class OidcConfigDto {
++  @IsBoolean()
++  enabled: boolean;
++
++  @IsString()
++  issuerUrl: string;
++
++  @IsString()
++  clientId: string;
++
++  @IsString()
++  buttonName: string;
++
++  @IsBoolean()
++  jitEnabled: boolean;
++}
+Index: apps/server/src/core/auth/dto/update-domains.dto.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/core/auth/dto/update-domains.dto.ts b/apps/server/src/core/auth/dto/update-domains.dto.ts
+new file mode 100644
+--- /dev/null	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
++++ b/apps/server/src/core/auth/dto/update-domains.dto.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -0,0 +1,7 @@
++import { IsString, IsArray } from 'class-validator';
++
++export class UpdateDomainsDto {
++  @IsArray()
++  @IsString({ each: true })
++  domains: string[];
++}
+Index: apps/server/src/core/auth/dto/update-oidc.dto.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/core/auth/dto/update-oidc.dto.ts b/apps/server/src/core/auth/dto/update-oidc.dto.ts
+new file mode 100644
+--- /dev/null	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
++++ b/apps/server/src/core/auth/dto/update-oidc.dto.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -0,0 +1,27 @@
++import { IsBoolean, IsOptional, IsString } from 'class-validator';
++
++export class UpdateOidcConfigDto {
++  @IsBoolean()
++  @IsOptional()
++  enabled: boolean | undefined;
++
++  @IsString()
++  @IsOptional()
++  issuerUrl: string | undefined;
++
++  @IsString()
++  @IsOptional()
++  clientId: string | undefined;
++
++  @IsString()
++  @IsOptional()
++  clientSecret: string | undefined;
++
++  @IsString()
++  @IsOptional()
++  buttonName: string | undefined;
++
++  @IsBoolean()
++  @IsOptional()
++  jitEnabled: boolean | undefined;
++}
+Index: apps/server/src/core/auth/services/auth.service.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/core/auth/services/auth.service.ts b/apps/server/src/core/auth/services/auth.service.ts
+--- a/apps/server/src/core/auth/services/auth.service.ts	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/server/src/core/auth/services/auth.service.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -29,6 +29,16 @@
+ import { executeTx } from '@docmost/db/utils';
+ import { VerifyUserTokenDto } from '../dto/verify-user-token.dto';
+ import { DomainService } from '../../../integrations/environment/domain.service';
++import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
++import { UpdateOidcConfigDto } from '../dto/update-oidc.dto';
++import { OidcConfigDto } from '../dto/oidc-config.dto';
++import { FastifyRequest } from 'fastify';
++import { z } from 'zod';
++import { Issuer } from 'openid-client';
++import { EnvironmentService } from 'src/integrations/environment/environment.service';
++import { UserRole } from 'src/common/helpers/types/permission';
++import { GroupUserRepo } from '@docmost/db/repos/group/group-user.repo';
++import { WorkspaceService } from 'src/core/workspace/services/workspace.service';
+ 
+ @Injectable()
+ export class AuthService {
+@@ -38,10 +48,149 @@
+     private userRepo: UserRepo,
+     private userTokenRepo: UserTokenRepo,
+     private mailService: MailService,
++    private groupUserRepo: GroupUserRepo,
+     private domainService: DomainService,
++    private workspaceRepo: WorkspaceRepo,
++    private workspaceService: WorkspaceService,
++    private environmentService: EnvironmentService,
+     @InjectKysely() private readonly db: KyselyDB,
+   ) {}
+ 
++
++  async updateApprovedDomains(
++    domains: string[],
++    workspaceId: string,
++  ): Promise<string[]> {
++    await this.workspaceRepo.updateWorkspace(
++      {
++        emailDomains: domains,
++      },
++      workspaceId,
++    );
++
++    return domains;
++  }
++
++  async updateOidcConfig(
++    dto: UpdateOidcConfigDto,
++    workspaceId: string,
++  ): Promise<OidcConfigDto> {
++    const workspace = await this.workspaceRepo.findById(workspaceId);
++
++    if (!workspace) {
++      throw new NotFoundException('Workspace not found');
++    }
++
++    const updateData: Partial<Workspace> = {};
++
++    if (dto.enabled !== undefined) {
++      updateData.oidcEnabled = dto.enabled;
++    }
++
++    if (dto.issuerUrl) {
++      updateData.oidcIssuerUrl = dto.issuerUrl;
++    }
++
++    if (dto.clientId) {
++      updateData.oidcClientId = dto.clientId;
++    }
++
++    if (dto.clientSecret) {
++      updateData.oidcClientSecret = dto.clientSecret;
++    }
++
++    if (dto.buttonName) {
++      updateData.oidcButtonName = dto.buttonName;
++    }
++
++    if (dto.jitEnabled !== undefined) {
++      updateData.oidcJitEnabled = dto.jitEnabled;
++    }
++
++    await this.workspaceRepo.updateWorkspace(updateData, workspaceId);
++
++    const updatedWorkspace = await this.workspaceRepo.findById(workspaceId);
++
++    return {
++      enabled: updatedWorkspace.oidcEnabled,
++      issuerUrl: updatedWorkspace.oidcIssuerUrl,
++      clientId: updatedWorkspace.oidcClientId,
++      buttonName: updatedWorkspace.oidcButtonName,
++      jitEnabled: updatedWorkspace.oidcJitEnabled,
++    };
++  }
++
++  async oidcLogin(req: FastifyRequest) {
++    const querySchema = z.object({
++      code: z.string(),
++      state: z.string(),
++    });
++
++    const { data: query } = querySchema.safeParse(req.query);
++
++    if (!query) {
++      throw new UnauthorizedException();
++    }
++
++    const workspace = await this.workspaceRepo.findById(query.state);
++
++    if (
++      !workspace ||
++      !workspace.oidcIssuerUrl ||
++      !workspace.oidcClientId ||
++      !workspace.oidcClientSecret
++    ) {
++      throw new UnauthorizedException();
++    }
++
++    const issuer = await Issuer.discover(workspace.oidcIssuerUrl);
++    const client = new issuer.Client({
++      client_id: workspace.oidcClientId,
++      client_secret: workspace.oidcClientSecret,
++    });
++
++    const redirectUri = `${this.environmentService.getAppUrl()}/api/auth/cb`;
++
++    const params = client.callbackParams(req.raw);
++    const tokenSet = await client.callback(redirectUri, params, {
++      state: workspace.id,
++    });
++
++    const name = tokenSet.claims().name;
++    const email = tokenSet.claims().email;
++
++    if (!email) {
++      throw new UnauthorizedException();
++    }
++
++    const user = await this.userRepo.findByEmail(email, workspace.id);
++
++    if (!user) {
++      if (
++        // workspace.oidcJitEnabled &&
++        workspace.emailDomains.includes(email.split('@')[1])
++      ) {
++        const user = await this.userRepo.insertUser({
++          name,
++          email,
++          role: UserRole.MEMBER,
++          workspaceId: workspace.id,
++          emailVerifiedAt: new Date(),
++        });
++
++        // TODO: This should really all happen in one function under the UserService
++        await this.workspaceService.addUserToWorkspace(user.id, workspace.id);
++        await this.groupUserRepo.addUserToDefaultGroup(user.id, workspace.id);
++
++        return this.tokenService.generateAccessToken(user);
++      }
++
++      throw new UnauthorizedException();
++    }
++
++    return this.tokenService.generateAccessToken(user);
++  }
++
+   async login(loginDto: LoginDto, workspaceId: string) {
+     const user = await this.userRepo.findByEmail(
+       loginDto.email,
+Index: apps/server/src/database/migrations/20250222T115000-AddWorkspaceOIDCConfiguration.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/database/migrations/20250222T115000-AddWorkspaceOIDCConfiguration.ts b/apps/server/src/database/migrations/20250222T115000-AddWorkspaceOIDCConfiguration.ts
+new file mode 100644
+--- /dev/null	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
++++ b/apps/server/src/database/migrations/20250222T115000-AddWorkspaceOIDCConfiguration.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -0,0 +1,33 @@
++import { sql, type Kysely } from 'kysely';
++
++export async function up(db: Kysely<any>): Promise<void> {
++  await sql`
++        ALTER TABLE workspaces
++        ADD COLUMN oidc_enabled BOOLEAN DEFAULT FALSE,
++        ADD COLUMN oidc_client_id TEXT,
++        ADD COLUMN oidc_client_secret TEXT,
++        ADD COLUMN oidc_issuer_url TEXT,
++        ADD COLUMN oidc_jit_enabled BOOLEAN DEFAULT FALSE,
++        ADD COLUMN oidc_button_name TEXT;
++    `.execute(db);
++
++  // await sql`ALTER TABLE workspaces RENAME COLUMN email_domains TO approved_domains`.execute(
++  //   db,
++  // );
++}
++
++export async function down(db: Kysely<any>): Promise<void> {
++  await sql`
++        ALTER TABLE workspaces
++        DROP COLUMN oidc_enabled,
++        DROP COLUMN oidc_client_id,
++        DROP COLUMN oidc_client_secret,
++        DROP COLUMN oidc_issuer_url,
++        DROP COLUMN oidc_jit_enabled,
++        DROP COLUMN oidc_button_name
++    `.execute(db);
++
++  // await sql`ALTER TABLE workspaces RENAME COLUMN approved_domains TO email_domains`.execute(
++  //   db,
++  // );
++}
+Index: apps/server/src/database/repos/user/user.repo.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/database/repos/user/user.repo.ts b/apps/server/src/database/repos/user/user.repo.ts
+--- a/apps/server/src/database/repos/user/user.repo.ts	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/server/src/database/repos/user/user.repo.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -13,6 +13,16 @@
+ import { executeWithPagination } from '@docmost/db/pagination/pagination';
+ import { sql } from 'kysely';
+ 
++function generateRandomString(length: number): string {
++  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
++  let result = '';
++  const charactersLength = characters.length;
++  for (let i = 0; i < length; i++) {
++    result += characters.charAt(Math.floor(Math.random() * charactersLength));
++  }
++  return result;
++}
++
+ @Injectable()
+ export class UserRepo {
+   constructor(@InjectKysely() private readonly db: KyselyDB) {}
+@@ -106,7 +116,7 @@
+       name:
+         insertableUser.name || insertableUser.email.split('@')[0].toLowerCase(),
+       email: insertableUser.email.toLowerCase(),
+-      password: await hashPassword(insertableUser.password),
++      password: await hashPassword(insertableUser.password?insertableUser.password:generateRandomString(15)),
+       locale: 'en-US',
+       role: insertableUser?.role,
+       lastLoginAt: new Date(),
+Index: apps/server/src/database/repos/workspace/workspace.repo.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/database/repos/workspace/workspace.repo.ts b/apps/server/src/database/repos/workspace/workspace.repo.ts
+--- a/apps/server/src/database/repos/workspace/workspace.repo.ts	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/server/src/database/repos/workspace/workspace.repo.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -32,6 +32,10 @@
+     'trialEndAt',
+     'enforceSso',
+     'plan',
++    'oidcIssuerUrl',
++    'oidcClientId',
++    'oidcClientSecret',
++    'oidcJitEnabled'
+   ];
+   constructor(@InjectKysely() private readonly db: KyselyDB) {}
+ 
+Index: apps/server/src/database/types/db.d.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/apps/server/src/database/types/db.d.ts b/apps/server/src/database/types/db.d.ts
+--- a/apps/server/src/database/types/db.d.ts	(revision 30acc6676a6c9db3911f62d8d19e46f9da4aa92c)
++++ b/apps/server/src/database/types/db.d.ts	(revision 1e4e10f9861a5bb445c9d6476559b4075a4b15f8)
+@@ -254,6 +254,7 @@
+ }
+ 
+ export interface Workspaces {
++  // approvedDomains: Generated<string[] | null>;
+   billingEmail: string | null;
+   createdAt: Generated<Timestamp>;
+   customDomain: string | null;
+@@ -274,6 +275,15 @@
+   stripeCustomerId: string | null;
+   trialEndAt: Timestamp | null;
+   updatedAt: Generated<Timestamp>;
++
++  // OIDC settings
++  oidcEnabled: boolean;
++  oidcClientId: string | null;
++  oidcClientSecret: string | null;
++  oidcIssuerUrl: string | null;
++  oidcJitEnabled: boolean;
++  oidcButtonName: string | null;
++
+ }
+ 
+ export interface DB {

@@ -1,3 +1,5 @@
+.mount
+.agents
 ~storage
 .env
 .env.dev
