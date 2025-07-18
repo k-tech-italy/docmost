@@ -8,7 +8,7 @@ NPM_VER := $(shell cat .nvmrc)
 NPM_INSTALLED := $(shell . ${HOME}/.nvm/nvm.sh && nvm ls | grep -E "\->\s+v${NPM_VER}\.\d{1,2}\.\d{1,3}")
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 HASH := $(shell git rev-parse HEAD)
-VERSION := `grep version package.json | cut -d '"' -f 4`
+VERSION := `npm pkg get version --workspaces=false | tr -d \"`
 DOCKER_REGISTRY?=docker.k-tech.it
 
 define BROWSER_PYSCRIPT
