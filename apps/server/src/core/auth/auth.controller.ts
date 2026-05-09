@@ -41,7 +41,7 @@ import {
   IAuditService,
 } from '../../integrations/audit/audit.service';
 
-import { Issuer } from 'openid-client';
+import { discovery, buildAuthorizationUrl } from 'openid-client';
 import { UpdateOidcConfigDto } from './dto/update-oidc.dto';
 import { OidcConfigDto } from './dto/oidc-config.dto';
 import { UpdateDomainsDto } from './dto/update-domains.dto';
@@ -83,21 +83,23 @@ export class AuthController {
       return reply.redirect(`${this.environmentService.getAppUrl()}/login`);
     }
 
-    const issuer = await Issuer.discover(workspace.oidcIssuerUrl);
+    const config = await discovery(
+      new URL(workspace.oidcIssuerUrl),
+      workspace.oidcClientId,
+    );
 
-    if (!issuer.metadata.authorization_endpoint || !workspace.oidcClientId) {
+    const serverMetadata = config.serverMetadata();
+    if (!serverMetadata.authorization_endpoint) {
       return reply.redirect(`${this.environmentService.getAppUrl()}/login`);
     }
 
-    const authRedirect =
-      `${issuer.metadata.authorization_endpoint}` +
-      `?response_type=code` +
-      `&client_id=${workspace.oidcClientId}` +
-      `&redirect_uri=${redirectUri}` +
-      `&scope=openid profile email` +
-      `&state=${workspace.id}`;
+    const authRedirect = buildAuthorizationUrl(config, {
+      redirect_uri: redirectUri,
+      scope: 'openid profile email',
+      state: workspace.id,
+    });
 
-    return reply.redirect(authRedirect);
+    return reply.redirect(authRedirect.href);
   }
 
   @Get('oidc-public-config')

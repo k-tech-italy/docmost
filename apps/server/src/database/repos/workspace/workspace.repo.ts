@@ -35,7 +35,7 @@ export class WorkspaceRepo {
     'oidcIssuerUrl',
     'oidcClientId',
     'oidcClientSecret',
-    'oidcJitEnabled'
+    'oidcJitEnabled',
     'enforceMfa',
     'trashRetentionDays',
     'isScimEnabled',

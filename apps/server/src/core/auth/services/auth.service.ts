@@ -41,12 +41,11 @@ import {
 } from '../../../integrations/audit/audit.service';
 import { EnvironmentService } from '../../../integrations/environment/environment.service';
 
-import { z } from 'zod';
 import { FastifyRequest } from 'fastify';
 import { UpdateOidcConfigDto } from '../dto/update-oidc.dto';
 import { OidcConfigDto } from '../dto/oidc-config.dto';
 import { UserRole } from 'src/common/helpers/types/permission';
-import { Issuer } from 'openid-client';
+import { discovery, authorizationCodeGrant } from 'openid-client';
 import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
 import { GroupUserRepo } from '@docmost/db/repos/group/group-user.repo';
 import { WorkspaceService } from 'src/core/workspace/services/workspace.service';
@@ -135,18 +134,12 @@ export class AuthService {
   }
 
   async oidcLogin(req: FastifyRequest) {
-    const querySchema = z.object({
-      code: z.string(),
-      state: z.string(),
-    });
-
-    const { data: query } = querySchema.safeParse(req.query);
-
-    if (!query) {
+    const state = String(req.query?.['state'] ?? '');
+    if (!state) {
       throw new UnauthorizedException();
     }
 
-    const workspace = await this.workspaceRepo.findById(query.state);
+    const workspace = await this.workspaceRepo.findById(state);
 
     if (
       !workspace ||
@@ -157,21 +150,28 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const issuer = await Issuer.discover(workspace.oidcIssuerUrl);
-    const client = new issuer.Client({
-      client_id: workspace.oidcClientId,
-      client_secret: workspace.oidcClientSecret,
-    });
+    const config = await discovery(
+      new URL(workspace.oidcIssuerUrl),
+      workspace.oidcClientId,
+      { client_secret: workspace.oidcClientSecret },
+    );
 
     const redirectUri = `${this.environmentService.getAppUrl()}/api/auth/cb`;
+    const incomingUrl = new URL(req.url, `${req.protocol || 'http'}://${req.hostname}`);
+    const currentUrl = new URL(redirectUri);
+    currentUrl.search = incomingUrl.search;
 
-    const params = client.callbackParams(req.raw);
-    const tokenSet = await client.callback(redirectUri, params, {
-      state: workspace.id,
+    const tokenSet = await authorizationCodeGrant(config, currentUrl, {
+      expectedState: workspace.id,
     });
 
-    const name = tokenSet.claims().name;
-    const email = tokenSet.claims().email;
+    const idToken = tokenSet.claims();
+    if (!idToken) {
+      throw new UnauthorizedException();
+    }
+
+    const name = idToken.name as string;
+    const email = idToken.email as string;
 
     if (!email) {
       throw new UnauthorizedException();
@@ -196,13 +196,13 @@ export class AuthService {
         await this.workspaceService.addUserToWorkspace(user.id, workspace.id);
         await this.groupUserRepo.addUserToDefaultGroup(user.id, workspace.id);
 
-        return this.tokenService.generateAccessToken(user);
+        return this.sessionService.createSessionAndToken(user);
       }
 
       throw new UnauthorizedException();
     }
 
-    return this.tokenService.generateAccessToken(user);
+    return this.sessionService.createSessionAndToken(user);
   }
 
   async login(loginDto: LoginDto, workspaceId: string) {

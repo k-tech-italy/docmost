@@ -109,3 +109,8 @@ run: ## run docker container locally with http
 	psql -h localhost -p "${DOCMOST_DB_PORT}" -U postgres -c "DROP DATABASE IF EXISTS ${DOCMOST_DB_NAME}"
 	psql -h localhost -p "${DOCMOST_DB_PORT}" -U postgres -c "CREATE DATABASE ${DOCMOST_DB_NAME} OWNER docmost"
 	psql -h localhost -p ${DOCMOST_DB_PORT} -U postgres --set ON_ERROR_STOP=on -d ${DOCMOST_DB_NAME} < `ls -1 ${DOCMOST_BACKUP}/docmost*.sql`
+
+release-latest: ## Release
+	@docker tag ${DOCKER_IMAGE_FULLNAME} ${DOCKER_IMAGE}:latest
+	@docker push ${DOCKER_IMAGE_FULLNAME}
+	@docker push ${DOCKER_IMAGE}:latest
