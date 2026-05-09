@@ -15,7 +15,8 @@ export default function SpaceViewerCommentsToggle({
   space,
 }: SpaceViewerCommentsToggleProps) {
   const { t } = useTranslation();
-  const hasViewerComments = useHasFeature(Feature.VIEWER_COMMENTS);
+  // const hasViewerComments = useHasFeature(Feature.VIEWER_COMMENTS);
+  const hasViewerComments = true;
   const upgradeLabel = useUpgradeLabel();
   const isDisabled = !hasViewerComments;
   const [checked, setChecked] = useState(
