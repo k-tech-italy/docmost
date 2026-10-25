@@ -203,6 +203,10 @@ export class EnvironmentService {
     return this.configService.get<string>('DRAWIO_URL');
   }
 
+  getOidcLogoutUrl(): string | undefined {
+    return this.configService.get<string>('OIDC_LOGOUT_URL') || undefined;
+  }
+
   isCloud(): boolean {
     const cloudConfig = this.configService
       .get<string>('CLOUD', 'false')

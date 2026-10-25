@@ -166,7 +166,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "happy-dom.+\\.js$": [
+      "(happy-dom|openid-client|oauth4webapi|jose).+\\.js$": [
         "babel-jest",
         {
           "presets": [
@@ -184,7 +184,7 @@
       "^.+\\.(t|j)sx?$": "ts-jest"
     },
     "transformIgnorePatterns": [
-      "/node_modules/(?!(\\.pnpm/)?(nanoid|uuid|image-dimensions|marked|happy-dom)(@|/))"
+      "/node_modules/(?!(\\.pnpm/)?(nanoid|uuid|image-dimensions|marked|happy-dom|openid-client|oauth4webapi|jose)(@|/))"
     ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"

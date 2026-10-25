@@ -92,6 +92,10 @@ export function getDrawioUrl() {
   return getConfigValue("DRAWIO_URL", "https://embed.diagrams.net");
 }
 
+export function getOidcLogoutUrl() {
+  return getConfigValue("OIDC_LOGOUT_URL") || undefined;
+}
+
 export function getBillingTrialDays() {
   return getConfigValue("BILLING_TRIAL_DAYS");
 }

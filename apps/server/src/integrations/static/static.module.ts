@@ -40,6 +40,7 @@ export class StaticModule implements OnModuleInit {
         FILE_IMPORT_SIZE_LIMIT:
           this.environmentService.getFileImportSizeLimit(),
         DRAWIO_URL: this.environmentService.getDrawioUrl(),
+        OIDC_LOGOUT_URL: this.environmentService.getOidcLogoutUrl(),
         SUBDOMAIN_HOST: this.environmentService.isCloud()
           ? this.environmentService.getSubdomainHost()
           : undefined,

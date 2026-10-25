@@ -93,6 +93,9 @@ const Integrations = lazyWithPrefetch(
 const Connections = lazyWithPrefetch(
   () => import("@/features/integration/pages/connections.tsx"),
 );
+const WorkspaceSecuritySettings = lazyWithPrefetch(
+  () => import("@/pages/settings/workspace/workspace-security"),
+);
 
 export default function App() {
   const { t } = useTranslation();
@@ -198,6 +201,7 @@ export default function App() {
             <Route path={"groups"} element={<Groups />} />
             <Route path={"groups/:groupId"} element={<GroupInfo />} />
             <Route path={"spaces"} element={<Spaces />} />
+            <Route path={"security2"} element={<WorkspaceSecuritySettings />} />
             <Route path={"sharing"} element={<Shares />} />
             <Route path={"security"} element={<Security />} />
             <Route path={"ai"} element={<AiSettings />} />

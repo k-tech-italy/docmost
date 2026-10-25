@@ -20,7 +20,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { getSpaceUrl } from "@/lib/config.ts";
+import { getOidcLogoutUrl, getSpaceUrl } from "@/lib/config.ts";
 import { useHasFeature } from "@/ee/hooks/use-feature";
 import { Feature } from "@/ee/features";
 import { usePersonalSpaceQuery } from "@/ee/personal-space/queries/personal-space-query";
@@ -37,7 +37,7 @@ import { AvatarIconType } from "@/features/attachments/types/attachment.types.ts
 export default function TopMenu() {
   const { t } = useTranslation();
   const [currentUser] = useAtom(currentUserAtom);
-  const { logout } = useAuth();
+  const { logout, logoutSso } = useAuth();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const user = currentUser?.user;
@@ -194,6 +194,11 @@ export default function TopMenu() {
         <Menu.Item onClick={logout} leftSection={<IconLogout size={16} />}>
           {t("Logout")}
         </Menu.Item>
+        {getOidcLogoutUrl() && (
+          <Menu.Item onClick={logoutSso} leftSection={<IconLogout size={16} />}>
+            SSO Logout
+          </Menu.Item>
+        )}
       </Menu.Dropdown>
     </Menu>
 

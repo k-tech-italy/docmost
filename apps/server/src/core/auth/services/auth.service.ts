@@ -45,6 +45,15 @@ import { EnvironmentService } from '../../../integrations/environment/environmen
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventName } from '../../../common/events/event.contants';
 
+import { FastifyRequest } from 'fastify';
+import { UpdateOidcConfigDto } from '../dto/update-oidc.dto';
+import { OidcConfigDto } from '../dto/oidc-config.dto';
+import { UserRole } from 'src/common/helpers/types/permission';
+import { discovery, authorizationCodeGrant } from 'openid-client';
+import { WorkspaceRepo } from '@docmost/db/repos/workspace/workspace.repo';
+import { GroupUserRepo } from '@docmost/db/repos/group/group-user.repo';
+import { WorkspaceService } from 'src/core/workspace/services/workspace.service';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -57,13 +66,154 @@ export class AuthService {
     private userRepo: UserRepo,
     private userTokenRepo: UserTokenRepo,
     private mailService: MailService,
+    private groupUserRepo: GroupUserRepo,
     private domainService: DomainService,
     private environmentService: EnvironmentService,
     private eventEmitter: EventEmitter2,
+    private workspaceRepo: WorkspaceRepo,
+    private workspaceService: WorkspaceService,
     @InjectKysely() private readonly db: KyselyDB,
     @Inject(AUDIT_SERVICE) private readonly auditService: IAuditService,
     private wsService: WsService,
   ) {}
+
+  async updateApprovedDomains(
+    domains: string[],
+    workspaceId: string,
+  ): Promise<string[]> {
+    await this.workspaceRepo.updateWorkspace(
+      {
+        emailDomains: domains,
+      },
+      workspaceId,
+    );
+
+    return domains;
+  }
+
+  async updateOidcConfig(
+    dto: UpdateOidcConfigDto,
+    workspaceId: string,
+  ): Promise<OidcConfigDto> {
+    const workspace = await this.workspaceRepo.findById(workspaceId);
+
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
+    }
+
+    const updateData: Partial<Workspace> = {};
+
+    if (dto.enabled !== undefined) {
+      updateData.oidcEnabled = dto.enabled;
+    }
+
+    if (dto.issuerUrl) {
+      updateData.oidcIssuerUrl = dto.issuerUrl;
+    }
+
+    if (dto.clientId) {
+      updateData.oidcClientId = dto.clientId;
+    }
+
+    if (dto.clientSecret) {
+      updateData.oidcClientSecret = dto.clientSecret;
+    }
+
+    if (dto.buttonName) {
+      updateData.oidcButtonName = dto.buttonName;
+    }
+
+    if (dto.jitEnabled !== undefined) {
+      updateData.oidcJitEnabled = dto.jitEnabled;
+    }
+
+    await this.workspaceRepo.updateWorkspace(updateData, workspaceId);
+
+    const updatedWorkspace = await this.workspaceRepo.findById(workspaceId);
+
+    return {
+      enabled: updatedWorkspace.oidcEnabled,
+      issuerUrl: updatedWorkspace.oidcIssuerUrl,
+      clientId: updatedWorkspace.oidcClientId,
+      buttonName: updatedWorkspace.oidcButtonName,
+      jitEnabled: updatedWorkspace.oidcJitEnabled,
+    };
+  }
+
+  async oidcLogin(req: FastifyRequest) {
+    const state = String(req.query?.['state'] ?? '');
+    if (!state) {
+      throw new UnauthorizedException();
+    }
+
+    const workspace = await this.workspaceRepo.findById(state);
+
+    if (
+      !workspace ||
+      !workspace.oidcIssuerUrl ||
+      !workspace.oidcClientId ||
+      !workspace.oidcClientSecret
+    ) {
+      throw new UnauthorizedException();
+    }
+
+    const config = await discovery(
+      new URL(workspace.oidcIssuerUrl),
+      workspace.oidcClientId,
+      { client_secret: workspace.oidcClientSecret },
+    );
+
+    const redirectUri = `${this.environmentService.getAppUrl()}/api/auth/cb`;
+    const incomingUrl = new URL(
+      req.url,
+      `${req.protocol || 'http'}://${req.hostname}`,
+    );
+    const currentUrl = new URL(redirectUri);
+    currentUrl.search = incomingUrl.search;
+
+    const tokenSet = await authorizationCodeGrant(config, currentUrl, {
+      expectedState: workspace.id,
+    });
+
+    const idToken = tokenSet.claims();
+    if (!idToken) {
+      throw new UnauthorizedException();
+    }
+
+    const name = idToken.name as string;
+    const email = idToken.email as string;
+
+    if (!email) {
+      throw new UnauthorizedException();
+    }
+
+    const user = await this.userRepo.findByEmail(email, workspace.id);
+
+    if (!user) {
+      if (
+        // workspace.oidcJitEnabled &&
+        workspace.emailDomains.includes(email.split('@')[1])
+      ) {
+        const user = await this.userRepo.insertUser({
+          name,
+          email,
+          role: UserRole.MEMBER,
+          workspaceId: workspace.id,
+          emailVerifiedAt: new Date(),
+        });
+
+        // TODO: This should really all happen in one function under the UserService
+        await this.workspaceService.addUserToWorkspace(user.id, workspace.id);
+        await this.groupUserRepo.addUserToDefaultGroup(user.id, workspace.id);
+
+        return this.sessionService.createSessionAndToken(user);
+      }
+
+      throw new UnauthorizedException();
+    }
+
+    return this.sessionService.createSessionAndToken(user);
+  }
 
   async login(loginDto: LoginDto, workspaceId: string) {
     const user = await this.userRepo.findByEmail(loginDto.email, workspaceId, {

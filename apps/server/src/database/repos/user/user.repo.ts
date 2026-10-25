@@ -12,6 +12,7 @@ import {
 import { PaginationOptions } from '../../pagination/pagination-options';
 import { executeWithCursorPagination } from '@docmost/db/pagination/cursor-pagination';
 import { ExpressionBuilder, sql } from 'kysely';
+import { randomBytes } from 'node:crypto';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import { NotificationSettingKey } from '../../../core/notification/notification.constants';
 
@@ -118,7 +119,10 @@ export class UserRepo {
       name:
         insertableUser.name || insertableUser.email.split('@')[0].toLowerCase(),
       email: insertableUser.email.toLowerCase(),
-      password: await hashPassword(insertableUser.password),
+      // SSO-created users have no password; store an unusable random one.
+      password: await hashPassword(
+        insertableUser.password || randomBytes(32).toString('hex'),
+      ),
       locale: 'en-US',
       role: insertableUser?.role,
       lastLoginAt: new Date(),

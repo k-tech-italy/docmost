@@ -26,7 +26,7 @@ import {
 import APP_ROUTE, { getPostLoginRedirect } from "@/lib/app-route.ts";
 import { RESET } from "jotai/utils";
 import { useTranslation } from "react-i18next";
-import { isCloud } from "@/lib/config.ts";
+import { getOidcLogoutUrl, isCloud } from "@/lib/config.ts";
 import { deleteLocalPageData } from "@/lib/local-page-data.ts";
 import { exchangeTokenRedirectUrl, getHostnameUrl } from "@/ee/utils.ts";
 
@@ -171,6 +171,16 @@ export default function useAuth() {
     window.location.replace(`${APP_ROUTE.AUTH.LOGIN}?logout=1`);
   };
 
+  const handleLogoutSso = async () => {
+    const oidcLogoutUrl = getOidcLogoutUrl();
+    if (!oidcLogoutUrl) return handleLogout();
+
+    setCurrentUser(RESET);
+    await deleteLocalPageData();
+    await logout();
+    window.location.replace(oidcLogoutUrl);
+  };
+
   const handleForgotPassword = async (data: IForgotPassword) => {
     setIsLoading(true);
 
@@ -215,6 +225,7 @@ export default function useAuth() {
     passwordReset: handlePasswordReset,
     verifyUserToken: handleVerifyUserToken,
     logout: handleLogout,
+    logoutSso: handleLogoutSso,
     isLoading,
   };
 }

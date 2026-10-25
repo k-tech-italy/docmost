@@ -59,6 +59,11 @@ export class EnvironmentVariables {
   COLLAB_URL: string;
 
   @IsOptional()
+  @ValidateIf((obj) => obj.OIDC_LOGOUT_URL != '' && obj.OIDC_LOGOUT_URL != null)
+  @IsUrl({ protocols: ['http', 'https'], require_tld: false })
+  OIDC_LOGOUT_URL: string;
+
+  @IsOptional()
   CLOUD: boolean;
 
   @IsOptional()
